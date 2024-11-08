@@ -58,6 +58,7 @@ def main():
     conf["device"] = device
     print(conf)
 
+    conf["seed"]=2024
     torch.manual_seed(conf["seed"])
     np.random.seed(conf["seed"])
 
