@@ -14,6 +14,7 @@ import torch
 import torch.optim as optim
 from utility import Datasets
 from models.CrossCBR import CrossCBR
+import numpy as np
 
 
 def get_cmd():
@@ -56,6 +57,9 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     conf["device"] = device
     print(conf)
+
+    torch.manual_seed(conf["seed"])
+    np.random.seed(conf["seed"])
 
     for lr, l2_reg, item_level_ratio, bundle_level_ratio, bundle_agg_ratio, embedding_size, num_layers, c_lambda, c_temp in \
             product(conf['lrs'], conf['l2_regs'], conf['item_level_ratios'], conf['bundle_level_ratios'], conf['bundle_agg_ratios'], conf["embedding_sizes"], conf["num_layerss"], conf["c_lambdas"], conf["c_temps"]):
@@ -146,12 +150,11 @@ def main():
                 run.add_scalar("loss", loss_scalar, batch_anchor)
 
                 pbar.set_description("epoch: %d, loss: %.4f, bpr_loss: %.4f, c_loss: %.4f" %(epoch, loss_scalar, bpr_loss_scalar, c_loss_scalar))
-
-                if (batch_anchor+1) % test_interval_bs == 0:  
-                    metrics = {}
-                    metrics["val"] = test(model, dataset.val_loader, conf)
-                    metrics["test"] = test(model, dataset.test_loader, conf)
-                    best_metrics, best_perform, best_epoch = log_metrics(conf, model, metrics, run, log_path, checkpoint_model_path, checkpoint_conf_path, epoch, batch_anchor, best_metrics, best_perform, best_epoch)
+            
+            metrics = {}
+            metrics["val"] = test(model, dataset.val_loader, conf)
+            metrics["test"] = test(model, dataset.test_loader, conf)
+            best_metrics, best_perform, best_epoch = log_metrics(conf, model, metrics, run, log_path, checkpoint_model_path, checkpoint_conf_path, epoch, batch_anchor, best_metrics, best_perform, best_epoch)
 
 
 def init_best_metrics(conf):
@@ -255,7 +258,7 @@ def get_metrics(metrics, grd, pred, topks):
     for topk in topks:
         _, col_indice = torch.topk(pred, topk)
         row_indice = torch.zeros_like(col_indice) + torch.arange(pred.shape[0], device=pred.device, dtype=torch.long).view(-1, 1)
-        is_hit = grd[row_indice.view(-1), col_indice.view(-1)].view(-1, topk)
+        is_hit = grd[row_indice.view(-1).to(grd.device), col_indice.view(-1).to(grd.device)].view(-1, topk)
 
         tmp["recall"][topk] = get_recall(pred, grd, is_hit, topk)
         tmp["ndcg"][topk] = get_ndcg(pred, grd, is_hit, topk)
