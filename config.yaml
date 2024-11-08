@@ -73,4 +73,4 @@ iFashion:
   c_temps: [0.2]
 
   epochs: 50
-  test_interval: 5 
+  test_interval: 1
