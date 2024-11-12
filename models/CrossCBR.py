@@ -284,4 +284,8 @@ class CrossCBR(nn.Module):
         bundles_feature_atom, bundles_feature_non_atom = bundles_feature
 
         scores = torch.mm(users_feature_atom, bundles_feature_atom.t()) + torch.mm(users_feature_non_atom, bundles_feature_non_atom.t())
+        torch.save(users_feature[0], "u0.pt")
+        torch.save(users_feature[1], "u1.pt")
+        torch.save(bundles_feature[0], "b0.pt")
+        torch.save(bundles_feature[1], "b1.pt")
         return scores
