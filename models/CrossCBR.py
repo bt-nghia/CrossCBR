@@ -207,11 +207,13 @@ class CrossCBR(nn.Module):
         IL_bundles_feature = self.get_IL_bundle_rep(IL_items_feature, test)
 
         #  ============================= bundle level propagation =============================
-        if test:
-            BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph_ori, self.users_feature, self.bundles_feature, self.bundle_level_dropout, test)
-        else:
-            BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph, self.users_feature, self.bundles_feature, self.bundle_level_dropout, test)
+        # if test:
+        #     BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph_ori, self.users_feature, self.bundles_feature, self.bundle_level_dropout, test)
+        # else:
+        #     BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph, self.users_feature, self.bundles_feature, self.bundle_level_dropout, test)
 
+        BL_users_feature = self.users_feature
+        BL_bundles_feature = self.bundles_feature
         users_feature = [IL_users_feature*0, BL_users_feature]
         bundles_feature = [IL_bundles_feature*0, BL_bundles_feature]
 
