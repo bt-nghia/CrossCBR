@@ -212,8 +212,8 @@ class CrossCBR(nn.Module):
         else:
             BL_users_feature, BL_bundles_feature = self.one_propagate(self.bundle_level_graph, self.users_feature, self.bundles_feature, self.bundle_level_dropout, test)
 
-        users_feature = [IL_users_feature, BL_users_feature]
-        bundles_feature = [IL_bundles_feature, BL_bundles_feature]
+        users_feature = [IL_users_feature*0, BL_users_feature]
+        bundles_feature = [IL_bundles_feature*0, BL_bundles_feature]
 
         return users_feature, bundles_feature
 
@@ -248,14 +248,15 @@ class CrossCBR(nn.Module):
         bpr_loss = cal_bpr_loss(pred)
 
         # cl is abbr. of "contrastive loss"
-        u_cross_view_cl = self.cal_c_loss(IL_users_feature, BL_users_feature)
-        b_cross_view_cl = self.cal_c_loss(IL_bundles_feature, BL_bundles_feature)
+        # u_cross_view_cl = self.cal_c_loss(IL_users_feature, BL_users_feature)
+        # b_cross_view_cl = self.cal_c_loss(IL_bundles_feature, BL_bundles_feature)
 
-        c_losses = [u_cross_view_cl, b_cross_view_cl]
+        # c_losses = [u_cross_view_cl, b_cross_view_cl]
 
-        c_loss = sum(c_losses) / len(c_losses)
+        # c_loss = sum(c_losses) / len(c_losses)
 
-        return bpr_loss, c_loss
+        # return bpr_loss, c_loss
+        return bpr_loss, torch.zeros([1]).to(self.device)
 
 
     def forward(self, batch, ED_drop=False):
