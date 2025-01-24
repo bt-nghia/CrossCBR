@@ -231,6 +231,7 @@ def log_metrics(conf, model, metrics, run, log_path, checkpoint_model_path, chec
 
 
 def test(model, dataloader, conf):
+    all_users_rec_ids = []
     tmp_metrics = {}
     for m in ["recall", "ndcg"]:
         tmp_metrics[m] = {}
@@ -243,7 +244,10 @@ def test(model, dataloader, conf):
     for users, ground_truth_u_b, train_mask_u_b in dataloader:
         pred_b = model.evaluate(rs, users.to(device))
         pred_b -= 1e8 * train_mask_u_b.to(device)
-        tmp_metrics = get_metrics(tmp_metrics, ground_truth_u_b, pred_b, conf["topk"])
+        tmp_metrics, rec_ids = get_metrics(tmp_metrics, ground_truth_u_b, pred_b, conf["topk"])
+        all_users_rec_ids.append(rec_ids)
+    all_users_rec_ids = np.array(all_users_rec_ids)
+    np.save("REC_BUNDLE_IDS.npy", all_users_rec_ids)
 
     metrics = {}
     for m, topk_res in tmp_metrics.items():
@@ -255,9 +259,11 @@ def test(model, dataloader, conf):
 
 
 def get_metrics(metrics, grd, pred, topks):
+    batch_rec_ids = []
     tmp = {"recall": {}, "ndcg": {}}
     for topk in topks:
         _, col_indice = torch.topk(pred, topk)
+        batch_red_ids.append(col_indice)
         row_indice = torch.zeros_like(col_indice) + torch.arange(pred.shape[0], device=pred.device, dtype=torch.long).view(-1, 1)
         is_hit = grd[row_indice.view(-1).to(grd.device), col_indice.view(-1).to(grd.device)].view(-1, topk)
 
@@ -269,7 +275,7 @@ def get_metrics(metrics, grd, pred, topks):
             for i, x in enumerate(res):
                 metrics[m][topk][i] += x
 
-    return metrics
+    return metrics, batch_rec_ids
 
 
 def get_recall(pred, grd, is_hit, topk):
