@@ -246,7 +246,8 @@ def test(model, dataloader, conf):
         pred_b -= 1e8 * train_mask_u_b.to(device)
         tmp_metrics, rec_ids = get_metrics(tmp_metrics, ground_truth_u_b, pred_b, conf["topk"])
         all_users_rec_ids.append(rec_ids)
-    all_users_rec_ids = np.array(all_users_rec_ids)
+        
+    all_users_rec_ids = np.concatenate(all_users_rec_ids, axis=0)
     np.save("REC_BUNDLE_IDS.npy", all_users_rec_ids)
 
     metrics = {}
@@ -263,19 +264,20 @@ def get_metrics(metrics, grd, pred, topks):
     tmp = {"recall": {}, "ndcg": {}}
     for topk in topks:
         _, col_indice = torch.topk(pred, topk)
-        batch_rec_ids.append(col_indice.to("cpu"))
         row_indice = torch.zeros_like(col_indice) + torch.arange(pred.shape[0], device=pred.device, dtype=torch.long).view(-1, 1)
         is_hit = grd[row_indice.view(-1).to(grd.device), col_indice.view(-1).to(grd.device)].view(-1, topk)
 
         tmp["recall"][topk] = get_recall(pred, grd, is_hit, topk)
         tmp["ndcg"][topk] = get_ndcg(pred, grd, is_hit, topk)
+        
+    _, top100ids = torch.topk(pred, 100)
 
     for m, topk_res in tmp.items():
         for topk, res in topk_res.items():
             for i, x in enumerate(res):
                 metrics[m][topk][i] += x
 
-    return metrics, batch_rec_ids
+    return metrics, top100ids.to("cpu")
 
 
 def get_recall(pred, grd, is_hit, topk):
