@@ -231,7 +231,6 @@ def log_metrics(conf, model, metrics, run, log_path, checkpoint_model_path, chec
 
 
 def test(model, dataloader, conf):
-    all_users_rec_ids = []
     tmp_metrics = {}
     for m in ["recall", "ndcg"]:
         tmp_metrics[m] = {}
@@ -244,12 +243,8 @@ def test(model, dataloader, conf):
     for users, ground_truth_u_b, train_mask_u_b in dataloader:
         pred_b = model.evaluate(rs, users.to(device))
         pred_b -= 1e8 * train_mask_u_b.to(device)
-        tmp_metrics, rec_ids = get_metrics(tmp_metrics, ground_truth_u_b, pred_b, conf["topk"])
-        all_users_rec_ids.append(rec_ids)
+        tmp_metrics = get_metrics(tmp_metrics, ground_truth_u_b, pred_b, conf["topk"])
         
-    all_users_rec_ids = np.concatenate(all_users_rec_ids, axis=0)
-    np.save("REC_BUNDLE_IDS.npy", all_users_rec_ids)
-
     metrics = {}
     for m, topk_res in tmp_metrics.items():
         metrics[m] = {}
@@ -270,14 +265,12 @@ def get_metrics(metrics, grd, pred, topks):
         tmp["recall"][topk] = get_recall(pred, grd, is_hit, topk)
         tmp["ndcg"][topk] = get_ndcg(pred, grd, is_hit, topk)
         
-    _, top100ids = torch.topk(pred, 100)
-
     for m, topk_res in tmp.items():
         for topk, res in topk_res.items():
             for i, x in enumerate(res):
                 metrics[m][topk][i] += x
 
-    return metrics, top100ids.to("cpu")
+    return metrics
 
 
 def get_recall(pred, grd, is_hit, topk):
